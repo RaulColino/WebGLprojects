@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Prac1</title>
+    <style>
+        #myCanvas {
+            border: 2px solid red;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        const canvas = document.createElement("canvas");
+        canvas.id = "myCanvas";
+        canvas.width = 500;
+        canvas.height = 500;
+        document.querySelector("body").appendChild(canvas);
+        var gl = canvas.getContext("webgl2");
+
+        var VAO, VBO1, VBO2, VBO3, EBO;
+        VAO = gl.createVertexArray();
+
+        //Vertex Buffer Object (VBO): 
+        //Espacio creado en memoria del servidor (GPU) para guardar 
+        //la configuración de la geometría (a trvés de un array). Un VBO puede guardar:
+        //las posiciones de los vertices,
+        //el color de los vertices,
+        //las normales de los vertices
+        //las coordenadas de textura de los vertices.
+        //Hay 2 tipos de VBO: 
+        //- GL_ARRAY_BUFFER: contiene atributos (Array Buffer VBO a secas)
+        //- GL_ELEMENT_ARRAY_BUFFER:  contiene índices (EBO Element Array Buffer)
+        VBO1 = gl.createBuffer(); //se crea y asigna a la variable VBO1 un buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, VBO1); //se especifica el tipo de buffer y se enlaza el buffer para poder usarlo
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cubeVertexPositions),gl.STATIC_DRAW);//se suben los datos con gl.STATIC/DYNAMIC/STREAM_DRAW/READ/COPY usage
+
+        //Vertex Array Object (VAO):
+        //Hasta ahora solo hemos subido info a los VAOs pero la tarjeta no sabe como interpretarla
+        //Los VBOs se almacenan en un VAO. Un VAO solo contiene variables del estado.
+        //Contiene la configuración de varios VBO.
+        VAO = gl.createVertexArray(); //creación y asignación de un VAO a una variable.
+        gl.bindVertexArray(VAO); //activar el VAO
+        //Ahora para cada VBO 
+ 
+
+        //--- Configuración de nuestro programa ---
+        //Para configurar un programa hay que activarlo.
+        gl.useProgram(myProgram);
+    </script>
+</body>
+</html>
