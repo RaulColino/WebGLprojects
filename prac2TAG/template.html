@@ -46,51 +46,117 @@
         in vec3 fragPos;
 
         uniform float uSphereId;
-        //uniform vec3 uCamPos;
+        uniform vec3 uSunPos;
         uniform sampler2D uTextureAlbedo;
+        uniform sampler2D uTextureNormal;
+        uniform sampler2D uTextureSpecular;
         
         out vec4 fragColor;
 
-        void main(){
-            // //constantes
-            // vec3 lightColor = vec3(1.0,1.0,1.0);
-            // vec3 objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
-            // float objectColorAlpha = texture(uTextureAlbedo, vTexCoord).a;
-            
-            // vec3 lightPos = vec3(5.0,2.0,3.0);
-            // vec3 viewPos = vec3(0.0,0.0,-8.0);
+        void main() {
 
-            // float ambientStrength = 0.8;
-            // vec3 ambient = ambientStrength * lightColor;
-
-            // // diffuse
-            // vec3 norm = normalize(Normal);
-            // vec3 lightDir = normalize(lightPos - fragPos);
-            // float diff = max(dot(norm, lightDir), 0.0);
-            // vec3 diffuse = diff * lightColor;
-
-            // // specular
-            // float specularStrength = 0.5;
-            // vec3 viewDir = normalize(viewPos - fragPos);
-            // vec3 reflectDir = reflect(-lightDir, norm);
-            // float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-            // vec3 specular = specularStrength * spec * lightColor;
-
-            // vec3 result = (ambient+diffuse) * objectColor;
-            // fragColor = vec4(result, objectColorAlpha);
             vec3 objectColor;
-            if(uSphereId == 1.0){
+            float objectColorAlpha = texture(uTextureAlbedo, vTexCoord).a;
+
+            if(uSphereId == 1.0) { //sun
+
                 objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
                 //objectColor = vec3(1.0,1.0,0.0);
-            }else if(uSphereId == 2.0){
-                objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
-                //objectColor = vec3(0.0,0.0,1.0);
-            }else{
-                objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
-                //objectColor = vec3(3.0,3.0,3.0);
+
+            } else if(uSphereId == 2.0) { //earth
+
+                //constantes
+                vec3 texColorAlbedo = 0.8 * texture(uTextureAlbedo, vTexCoord).rgb;
+                vec3 texColorNormal = texture(uTextureNormal, vTexCoord).rgb;
+                vec3 texColorSpecular = texture(uTextureSpecular, vTexCoord).rgb;
+
+                vec3 N = normalize(Normal+normalize(2.0*texColorNormal - 1.0).xyz);
+
+                vec3 lightColor = vec3(1.0,1.0,1.0);
+                vec3 lightPos = uSunPos;
+                vec3 viewPos = vec3(0.0,0.0,-8.0);
+
+                //ambient
+                float ambientStrength = 0.2;
+                vec3 ambient = lightColor * ambientStrength * texColorAlbedo;
+
+                // diffuse
+                vec3 L = normalize(lightPos - fragPos);
+                float dotLN = max(dot(L, N), 0.0);
+                vec3 diffuse = lightColor * texColorAlbedo * dotLN;
+
+                // specular
+                float shininess = 40.0;
+                float specularStrength = 2.0;
+                vec3 viewDir = normalize(viewPos - fragPos);
+                vec3 R = normalize(reflect(-L, N));
+                float dotRV;
+                if (dot(N, L) < 0.0) 
+                    dotRV = 0.0;
+                else 
+                    dotRV = max(dot(R, viewDir), 0.0); 
+                vec3 specular = (lightColor * specularStrength) * texColorSpecular * pow(dotRV, shininess);
+
+                objectColor = ambient+diffuse+specular;
+            
+            } else if (uSphereId == 4.0) {
+                //constantes
+                vec3 texColor = texture(uTextureAlbedo, vTexCoord).rgb;
+                vec3 lightColor = vec3(1.0,1.0,1.0);
+                vec3 lightPos = uSunPos;
+                vec3 viewPos = vec3(0.0,0.0,-8.0);
+                float ambientStrength = 0.1;
+                vec3 ambient = ambientStrength * lightColor;
+
+                // diffuse
+                vec3 norm = normalize(Normal);
+                vec3 lightDir = normalize(lightPos - fragPos);
+                float diff = max(dot(norm, lightDir), 0.0);
+                vec3 diffuse = diff * lightColor;
+                
+                objectColor = (ambient+diffuse) * texColor * objectColorAlpha;
+
+            } else { //moon
+
+                //constantes
+                vec3 texColor = texture(uTextureAlbedo, vTexCoord).rgb;
+                vec3 lightColor = vec3(1.0,1.0,1.0);
+                vec3 lightPos = uSunPos;
+                vec3 viewPos = vec3(0.0,0.0,-8.0);
+                float ambientStrength = 0.1;
+                vec3 ambient = ambientStrength * lightColor;
+
+                // diffuse
+                vec3 norm = normalize(Normal);
+                vec3 lightDir = normalize(lightPos - fragPos);
+                float diff = max(dot(norm, lightDir), 0.0);
+                vec3 diffuse = diff * lightColor;
+
+                // specular
+                float specularStrength = 0.1;
+                vec3 viewDir = normalize(viewPos - fragPos);
+                vec3 reflectDir = reflect(-lightDir, norm);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+                vec3 specular = specularStrength * spec * lightColor;
+                
+                objectColor = (ambient+diffuse+specular) * texColor;
             }
-            float objectColorAlpha = texture(uTextureAlbedo, vTexCoord).a;
+
             fragColor = vec4(objectColor, objectColorAlpha);
+
+            //vec3 objectColor;
+            //if(uSphereId == 1.0){
+            //    objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
+            //    //objectColor = vec3(1.0,1.0,0.0);
+            //}else if(uSphereId == 2.0){
+            //    objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
+            //    //objectColor = vec3(0.0,0.0,1.0);
+            //}else{
+            //    objectColor = texture(uTextureAlbedo, vTexCoord).rgb;
+            //    //objectColor = vec3(3.0,3.0,3.0);
+            //}
+            //float objectColorAlpha = texture(uTextureAlbedo, vTexCoord).a;
+            //fragColor = vec4(objectColor, objectColorAlpha);
         }
     </script>
 </head>
@@ -100,8 +166,8 @@
         //webgl context
         const canvas = document.createElement("canvas");
         canvas.id = "myCanvas";
-        canvas.width = 500;
-        canvas.height = 500;
+        canvas.width = 1000;
+        canvas.height = 1000;
         document.querySelector("body").appendChild(canvas);
         var gl = canvas.getContext("webgl2");
 
@@ -145,6 +211,15 @@
         var earthTextureID = gl.createTexture();
         var earthTexInfo = loadImageAndCreateTextureInformation('./resources/earth_diffuse.jpg', earthTextureID);
 
+        var earthTexNormalID = gl.createTexture();
+        var earthTexNormalInfo = loadImageAndCreateTextureInformation('./resources/earth_normal.jpg', earthTexNormalID);
+        
+        var earthTexSpecularID  = gl.createTexture();
+        var earthTexSpecularInfo = loadImageAndCreateTextureInformation('./resources/earth_specular.jpg', earthTexSpecularID);
+
+        var earthCloudsTextureID  = gl.createTexture();
+        var earthCloudsTextureInfo = loadImageAndCreateTextureInformation('./resources/earth_clouds.png', earthCloudsTextureID);
+
         var moonTextureID = gl.createTexture();
         var moonTexInfo = loadImageAndCreateTextureInformation('./resources/moon.png', moonTextureID); 
 
@@ -157,7 +232,7 @@
         //loop to draw in each frame
         function renderFunc(time) {
 
-            gl.viewport(0, 0, 500, 500);
+            gl.viewport(0, 0, 1000, 1000);
             gl.clearColor(0.0, 0.0, 0.1, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST); //activate depth test
@@ -179,9 +254,14 @@
             //draw scene elements
             renderSun(projMatrix, viewMatrix, time);
             earthMatrix = renderEarth(projMatrix, viewMatrix, time);
-            renderEarthClouds(projMatrix, viewMatrix, time);
-            
             renderMoon(projMatrix, viewMatrix, earthMatrix, time);
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            gl.depthMask(false);
+            renderEarthClouds(projMatrix, viewMatrix, time);
+            gl.disable(gl.BLEND);
+            gl.depthMask(true);
 
             //redraw
             requestAnimationFrame(renderFunc);
@@ -201,7 +281,7 @@
             mat4.rotate(modelMatrix, modelMatrix, Math.radians(angle), [0.0, 0.5, 0.0]);
             
             //uniforms
-            //-- SphereId
+            //-- uSphereId
             shaderProgramSun.setUniform1f("uSphereId", 1.0);
             //-- matrices
             shaderProgramSun.setUniformMat4("projection", projMatrix);
@@ -219,6 +299,49 @@
         }
 
 
+        function renderEarthClouds(projMatrix, viewMatrix, time) {
+
+            shaderProgramEarthClouds.bind(); //gl.useProgram();
+            
+            //model matrix
+            var modelMatrix = mat4.create();
+            time *= 0.001; // to seconds
+            var angle = time * 25.0;
+            mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 0.0]);
+            mat4.scale(modelMatrix, modelMatrix, [-1.0, -1.0, -1.0]);
+            scale = 1.5;
+            mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
+            //mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 18.0]);
+            mat4.rotate(modelMatrix, modelMatrix, Math.radians(angle), [0.0, 0.5, 0.0]); //rotation over earth matrix
+            mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 10.0]);
+            mat4.rotate(modelMatrix, modelMatrix, Math.radians(angle)*1.15, [0.0, 0.5, 0.0]); //rotation over earth matrix
+            scale = 1.02;
+            mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
+
+            //uniforms
+            //-- uSphereId
+            shaderProgramEarthClouds.setUniform1f("uSphereId", 4.0);
+            //-- uSunPos
+            shaderProgramEarthClouds.setUniformVec3("uSunPos", [0,0,0]);
+            //-- matrices
+            shaderProgramEarthClouds.setUniformMat4("projection", projMatrix);
+            shaderProgramEarthClouds.setUniformMat4("view", viewMatrix);
+            shaderProgramEarthClouds.setUniformMat4("model", modelMatrix);
+            //-- texture
+            //shaderProgramEarth.createUniform("uTextureAlbedo");
+            gl.activeTexture( gl.TEXTURE0 ); 
+            shaderProgramEarthClouds.setUniform1i( "uTextureAlbedo", 0 ); //pos 0
+            gl.bindTexture( gl.TEXTURE_2D, earthCloudsTextureID );
+
+            //draw sphere
+            gl.bindVertexArray(vaoSphere);
+            gl.drawElements(gl.TRIANGLES, 15000, gl.UNSIGNED_INT, 0);
+            gl.bindVertexArray(null);
+
+            return modelMatrix;
+        }
+
+
         function renderEarth(projMatrix, viewMatrix, time) {
 
             shaderProgramEarth.bind(); //gl.useProgram();
@@ -229,7 +352,7 @@
             var angle = time * 25.0;
             mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 0.0]);
             mat4.scale(modelMatrix, modelMatrix, [-1.0, -1.0, -1.0]);
-            scale = 0.5;
+            scale = 1.5;
             mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
             //mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 18.0]);
             mat4.rotate(modelMatrix, modelMatrix, Math.radians(angle), [0.0, 0.5, 0.0]); //rotation over earth matrix
@@ -240,9 +363,12 @@
             // mat4.rotate(modelMatrix, modelMatrix, Math.radians(angle), [0.0, 0.5, 0.0]);
             // mat4.translate(modelMatrix, modelMatrix, [0.0, 0.0, 9.0]);
             
+
             //uniforms
-            //-- SphereId
+            //-- uSphereId
             shaderProgramEarth.setUniform1f("uSphereId", 2.0);
+            //-- uSunPos
+            shaderProgramEarth.setUniformVec3("uSunPos", [0,0,0]);
             //-- matrices
             shaderProgramEarth.setUniformMat4("projection", projMatrix);
             shaderProgramEarth.setUniformMat4("view", viewMatrix);
@@ -253,6 +379,14 @@
             shaderProgramEarth.setUniform1i( "uTextureAlbedo", 0 ); //pos 0
             gl.bindTexture( gl.TEXTURE_2D, earthTextureID );
 
+            gl.activeTexture( gl.TEXTURE0 + 1 );
+            shaderProgramEarth.setUniform1i( "uTextureNormal", 1 ); //pos 1
+            gl.bindTexture( gl.TEXTURE_2D, earthTexNormalID);
+
+            gl.activeTexture( gl.TEXTURE0 + 2 );
+            shaderProgramEarth.setUniform1i( "uTextureSpecular", 2 ); //pos 2
+            gl.bindTexture( gl.TEXTURE_2D, earthTexSpecularID);
+
 
             //draw sphere
             gl.bindVertexArray(vaoSphere);
@@ -261,8 +395,6 @@
 
             return modelMatrix;
         }
-
-        function renderEarthClouds(projMatrix, viewMatrix, time) {}
 
         function renderMoon(projMatrix, viewMatrix, earthMatrix, time) {
             shaderProgramMoon.bind(); //gl.useProgram();
@@ -286,6 +418,8 @@
             //uniforms
             //-- SphereId
             shaderProgramMoon.setUniform1f("uSphereId", 3.0);
+            //-- uSunPos
+            shaderProgramMoon.setUniformVec3("uSunPos", [0,0,0]);
             //-- matrices
             shaderProgramMoon.setUniformMat4("projection", projMatrix);
             shaderProgramMoon.setUniformMat4("view", viewMatrix);
